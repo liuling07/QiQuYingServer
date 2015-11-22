@@ -1,5 +1,5 @@
 # QiQuYingServer
-奇趣营app的接口服务端，[奇趣营客户端](http://www.liuling123.com)<br/>
+奇趣营app的接口服务端，[奇趣营客户端](https://github.com/liuling07/QiQuYing)<br/>
 服务端采用Spring MVC + Hibernate，数据库使用Mysql，上传的图片托管于七牛。
 
 # Usage
