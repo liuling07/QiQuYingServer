@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+    http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd
+    http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.0.xsd
+    http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-2.0.xsd
+    http://www.springframework.org/schema/context 
+    http://www.springframework.org/schema/context/spring-context-2.5.xsd">
+
+    
+    <bean id="encryptPropertyPlaceholderConfigurer"
+          class="com.lling.qiqu.commons.EncryptPropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath*:init.properties</value>
+            </list>
+        </property>
+        <property name="encryptedProps">
+            <set>
+                <value>jdbc.username</value>
+                <value>jdbc.password</value>
+            </set>
+        </property>
+    </bean>
+    <context:component-scan base-package="com.lling.qiqu.dao,com.lling.qiqu.service"></context:component-scan>
+    
+	<!-- 装配HibernateTemplate实例 -->
+	<bean id="hibernateTemplate" class="org.springframework.orm.hibernate3.HibernateTemplate">
+		<constructor-arg ref="sessionFactory"/>
+	</bean> 
+	
+	<!-- import datasource -->
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driverClassName}" />
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		
+		<!-- Connection Pooling Info -->
+		<property name="initialSize" value="50" />
+		<property name="maxActive" value="200" />
+		<property name="maxIdle" value="100" />
+		<property name="maxWait" value="5000" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="validationQuery" value="select 1 from dual" />
+	</bean>
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+				<prop key="connection.characterEncoding">UTF-8</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.connection.autocommit">false</prop>
+				<prop key="hibernate.jdbc.batch_size">50</prop>
+				<prop key="hibernate.jdbc.fetch_size">50</prop>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+			</props>
+		</property>
+		<property name="packagesToScan">
+			<list>
+				<value>com.lling.qiqu.beans</value>
+			</list>
+		</property>
+	</bean>
+	<bean id="taskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+		<!-- 线程池维护线程的最少数量 -->
+		<property name="corePoolSize" value="2" />
+		<!-- 线程池维护线程所允许的空闲时间 -->
+		<property name="keepAliveSeconds" value="30000" />
+		<!-- 线程池维护线程的最大数量 -->
+		<property name="maxPoolSize" value="2" />
+		<!-- 线程池所使用的缓冲队列 -->
+		<property name="queueCapacity" value="200" />
+	</bean>
+	
+	<!-- 事务管理器 -->
+    <bean id="transactionManager" class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory"></property>
+    </bean>
+    <!-- 事务属性 -->
+    <tx:advice id="mytx" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="*"/>
+        </tx:attributes>
+    </tx:advice>
+    <!-- 织入 -->
+    <aop:config>
+        <aop:advisor advice-ref="mytx" pointcut="execution(* com.lling.qiqu.service.*.*(..))"/>
+        <aop:advisor advice-ref="mytx" pointcut="execution(* com.lling.qiqu.dao.*.*(..))"/>
+    </aop:config>
+    
+</beans>
